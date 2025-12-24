@@ -4,147 +4,119 @@ const API_URL = 'http://localhost:3000/api';
 
 // Estado de la aplicación
 const state = {
-    isHostMode: false,
-    currentUser: null,
-    events: []
-};
-
-// Elementos DOM
-const elements = {
-    eventsGrid: document.getElementById('events-grid'),
-    backendStatus: document.getElementById('backend-status'),
-    loginModal: document.getElementById('login-modal'),
-    createEventModal: document.getElementById('create-event-modal'),
-    hostModeBtn: document.getElementById('host-mode-btn'),
-    modeIndicator: document.getElementById('mode-indicator'),
-    loginEmail: document.getElementById('login-email'),
-    loginPassword: document.getElementById('login-password'),
-    eventTitle: document.getElementById('event-title'),
-    eventDescription: document.getElementById('event-description'),
-    eventCategory: document.getElementById('event-category'),
-    eventDate: document.getElementById('event-date'),
-    eventLocation: document.getElementById('event-location'),
-    eventMaxPlayers: document.getElementById('event-max-players'),
-    eventMinQuorum: document.getElementById('event-min-quorum'),
-    eventRequiresApproval: document.getElementById('event-requires-approval')
+    user: null,
+    filters: {
+        city: 'concepcion', // <-- Ciudad por defecto
+        types: [],
+        status: 'upcoming',
+        social: []
+    },
+    events: [],
+    viewMode: 'grid',
+    currentCity: 'concepcion' // <-- Ciudad actual
 };
 
 // Inicialización
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     initApp();
 });
 
 function initApp() {
-    checkBackendStatus();
-    loadEvents();
+    updateCityBackground('concepcion'); // <-- Mostrar fondo de Concepción
     setupEventListeners();
+    loadEvents();
     updateUI();
-}
-
-// ===== FUNCIONES DE BACKEND =====
-
-async function checkBackendStatus() {
-    try {
-        const response = await fetch('http://localhost:3000/');
-        const data = await response.json();
-        
-        elements.backendStatus.innerHTML = `
-            <p class="status-online">
-                <i class="fas fa-check-circle"></i> Backend funcionando correctamente
-            </p>
-            <p class="mt-1"><small>${data.message} - ${new Date(data.timestamp).toLocaleTimeString()}</small></p>
-        `;
-    } catch (error) {
-        elements.backendStatus.innerHTML = `
-            <p class="status-offline">
-                <i class="fas fa-times-circle"></i> No se pudo conectar al backend
-            </p>
-            <p class="mt-1"><small>Error: ${error.message}</small></p>
-            <p class="mt-1"><small>Asegúrate de que el servidor esté corriendo en otra terminal</small></p>
-        `;
-    }
-}
-
-async function testAPI() {
-    try {
-        const response = await fetch(API_URL + '/test');
-        const data = await response.json();
-        showNotification(`✅ ${data.message}`, 'success');
-    } catch (error) {
-        showNotification(`❌ Error: ${error.message}`, 'error');
-    }
 }
 
 // ===== FUNCIONES DE EVENTOS =====
 
+
 async function loadEvents() {
     try {
-        showLoadingEvents();
+        showLoading();
         const response = await fetch(API_URL + '/events');
         state.events = await response.json();
         renderEvents();
+        updateEventsCount();
     } catch (error) {
-        showNotification(`❌ Error cargando eventos: ${error.message}`, 'error');
-        // Datos de ejemplo si falla
+        console.error('Error cargando eventos:', error);
+        // Datos de ejemplo para desarrollo
         state.events = getExampleEvents();
         renderEvents();
+        updateEventsCount();
+    } finally {
+        hideLoading();
     }
-}
-
-function showLoadingEvents() {
-    elements.eventsGrid.innerHTML = `
-        <div class="event-card loading-card">
-            <div class="event-body text-center">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>Cargando eventos...</p>
-            </div>
-        </div>
-    `;
 }
 
 function getExampleEvents() {
     return [
         {
             id: 1,
-            title: "Fútbol 5 - Ejemplo",
-            description: "Partido amistoso (datos de ejemplo)",
-            category: "sports",
+            title: "Fútbol 5 en Parque Bustamante",
+            description: "Partido amistoso, todos los niveles bienvenidos. Traer ropa deportiva.",
+            type: "sports",
             date: "Hoy, 20:00",
-            location: "Cancha Central",
+            location: "Parque Bustamante, Santiago",
             currentPlayers: 8,
             maxPlayers: 10,
             minQuorum: 6,
+            status: "quorum-high",
+            socialLevel: "open",
+            requiresApproval: false
+        },
+        {
+            id: 2,
+            title: "Trekking Cerro San Cristóbal",
+            description: "Caminata guiada por el cerro. Llevar agua y zapatos cómodos.",
+            type: "outdoor",
+            date: "Mañana, 08:00",
+            location: "Cerro San Cristóbal, Santiago",
+            currentPlayers: 12,
+            maxPlayers: 15,
+            minQuorum: 8,
             status: "confirmed",
+            socialLevel: "group",
+            requiresApproval: true
+        },
+        {
+            id: 3,
+            title: "Juegos de Mesa - Cervecería",
+            description: "Noche de juegos de estrategia. Trae tus juegos o usa los nuestros.",
+            type: "games",
+            date: "Viernes, 19:00",
+            location: "Cervecería Nacional, Providencia",
+            currentPlayers: 4,
+            maxPlayers: 8,
+            minQuorum: 4,
+            status: "quorum-medium",
+            socialLevel: "open",
             requiresApproval: false
         }
     ];
 }
 
 function renderEvents() {
-    elements.eventsGrid.innerHTML = '';
+    const eventsGrid = document.getElementById('events-grid');
+    eventsGrid.innerHTML = '';
     
     if (state.events.length === 0) {
-        elements.eventsGrid.innerHTML = `
-            <div class="event-card">
-                <div class="event-body text-center">
-                    <i class="fas fa-calendar-times"></i>
-                    <h3>No hay eventos disponibles</h3>
-                    <p>Crea el primer evento o intenta recargar.</p>
-                </div>
-            </div>
-        `;
+        document.getElementById('empty-state').style.display = 'flex';
         return;
     }
     
+    document.getElementById('empty-state').style.display = 'none';
+    
     state.events.forEach(event => {
         const eventCard = createEventCard(event);
-        elements.eventsGrid.appendChild(eventCard);
+        eventsGrid.appendChild(eventCard);
     });
 }
 
 function createEventCard(event) {
     const card = document.createElement('div');
     card.className = 'event-card';
+    card.onclick = () => showEventDetail(event.id);
     
     const quorumPercentage = calculateQuorumPercentage(
         event.currentPlayers || 0,
@@ -152,288 +124,385 @@ function createEventCard(event) {
         event.minQuorum || 2
     );
     
+    const quorumStatus = getQuorumStatus(quorumPercentage);
+    
     card.innerHTML = `
-        <div class="event-header">
-            <span class="event-category ${event.category}">
-                ${getCategoryLabel(event.category)}
-            </span>
-            <span class="event-status ${event.status}">
-                ${event.status === 'confirmed' ? '✅ Confirmado' : '⏳ Pendiente'}
-            </span>
+        <div class="event-card-image">
+            <div class="event-card-image-placeholder">
+                ${getTypeIcon(event.type)}
+            </div>
+            <div class="event-card-image-badge">
+                ${event.currentPlayers || 0}/${event.maxPlayers}
+            </div>
         </div>
-        <div class="event-body">
+
+        <div class="event-card-header">
+            <div class="event-type ${event.type}">
+                <span class="event-type-icon">${getTypeIcon(event.type)}</span>
+                <span>${getTypeLabel(event.type)}</span>
+            </div>
+            <div class="event-status ${event.status}">
+                ${getStatusLabel(event.status)}
+            </div>
+        </div>
+        
+        <div class="event-card-body">
             <h3 class="event-title">${event.title}</h3>
-            <p class="event-description">${event.description}</p>
-            <div class="event-details">
-                <div class="detail">
+            <p class="event-description ${!state.user ? 'blurred' : ''}">
+                ${event.description}
+            </p>
+
+            <div class="event-meta">
+                <div class="event-meta-item ${!state.user ? 'blurred' : ''}">
                     <i class="far fa-calendar"></i>
                     <span>${formatDate(event.date)}</span>
                 </div>
-                <div class="detail">
+                <div class="event-meta-item ${!state.user ? 'blurred' : ''}">
                     <i class="fas fa-map-marker-alt"></i>
                     <span>${event.location}</span>
                 </div>
-                <div class="detail">
+                <div class="event-meta-item">
                     <i class="fas fa-users"></i>
-                    <span>${event.currentPlayers || 0}/${event.maxPlayers} jugadores</span>
+                    <span>${event.currentPlayers || 0}/${event.maxPlayers} personas</span>
                 </div>
-                ${event.minQuorum ? `
-                <div class="detail">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Quórum mínimo: ${event.minQuorum}</span>
-                </div>` : ''}
             </div>
+            
+            
         </div>
-        <div class="event-footer">
-            <button class="btn btn-block" onclick="joinEvent(${event.id})">
-                <i class="fas fa-sign-in-alt"></i> 
-                ${event.requiresApproval ? 'Solicitar Unirse' : 'Unirse al Evento'}
-            </button>
+        
+        <div class="event-card-footer">
+            ${state.user ? `
+                <button class="btn btn-primary btn-block" onclick="joinEvent(${event.id}, event)">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Apañar</span>
+                </button>
+            ` : `
+                <button class="btn btn-primary btn-block" onclick="showLoginModal(event)">
+                    <i class="fas fa-eye"></i>
+                    <span>Ver detalles</span>
+                </button>
+            `}
         </div>
     `;
     
     return card;
 }
 
-// ===== FUNCIONES DE AUTENTICACIÓN =====
-
-async function login() {
-    const email = elements.loginEmail.value;
-    const password = elements.loginPassword.value;
+// ===== FUNCIONES DE FILTROS =====
+function applyFilters() {
+    // Obtener valores de los filtros
+    const city = document.getElementById('city-select').value;
+    const typeCheckboxes = document.querySelectorAll('input[name="event-type"]:checked');
+    const statusRadio = document.querySelector('input[name="event-status"]:checked');
+    const socialCheckboxes = document.querySelectorAll('input[name="social-level"]:checked');
     
-    if (!email || !password) {
-        showNotification('Por favor ingresa email y contraseña', 'warning');
-        return;
-    }
+    // Actualizar estado
+    state.filters.city = city;
+    state.filters.types = Array.from(typeCheckboxes).map(cb => cb.value);
+    state.filters.status = statusRadio ? statusRadio.value : 'upcoming';
+    state.filters.social = Array.from(socialCheckboxes).map(cb => cb.value);
     
-    try {
-        const response = await fetch(API_URL + '/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            state.currentUser = data.user;
-            showNotification(`✅ Bienvenido ${data.user.full_name}!`, 'success');
-            hideLoginModal();
-            updateUI();
-        } else {
-            showNotification(`❌ ${data.error}`, 'error');
-        }
-    } catch (error) {
-        showNotification('✅ Login simulado exitoso', 'success');
-        hideLoginModal();
-    }
+    // Aplicar filtros y recargar eventos
+    loadEvents();
 }
 
-// ===== FUNCIONES DE MODO HOST =====
-
-function toggleHostMode() {
-    state.isHostMode = !state.isHostMode;
-    updateHostModeUI();
-    showNotification(
-        state.isHostMode 
-            ? '🎭 Modo Host activado' 
-            : '👤 Modo Usuario activado',
-        'info'
-    );
-}
-
-function updateHostModeUI() {
-    const btn = elements.hostModeBtn;
-    const indicator = elements.modeIndicator;
-    
-    if (state.isHostMode) {
-        btn.innerHTML = '<i class="fas fa-crown"></i> Modo Host';
-        btn.classList.add('btn-mode');
-        indicator.style.display = 'block';
-    } else {
-        btn.innerHTML = '<i class="fas fa-user"></i> Modo Usuario';
-        btn.classList.remove('btn-mode');
-        indicator.style.display = 'none';
-    }
-}
-
-// ===== FUNCIONES DE CREACIÓN DE EVENTOS =====
-
-function showCreateEventModal() {
-    if (!state.isHostMode) {
-        showNotification('Cambia a Modo Host para crear eventos', 'warning');
-        return;
-    }
-    
-    // Resetear formulario
-    elements.eventTitle.value = '';
-    elements.eventDescription.value = '';
-    elements.eventCategory.value = 'sports';
-    elements.eventDate.value = '';
-    elements.eventLocation.value = '';
-    elements.eventMaxPlayers.value = '10';
-    elements.eventMinQuorum.value = '4';
-    elements.eventRequiresApproval.checked = false;
-    
-    // Establecer fecha mínima
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    elements.eventDate.min = now.toISOString().slice(0, 16);
-    
-    elements.createEventModal.style.display = 'flex';
-}
-
-function hideCreateEventModal() {
-    elements.createEventModal.style.display = 'none';
-}
-
-async function createEvent() {
-    if (!state.isHostMode) return;
-    
-    const event = {
-        title: elements.eventTitle.value,
-        description: elements.eventDescription.value,
-        category: elements.eventCategory.value,
-        date: elements.eventDate.value,
-        location: elements.eventLocation.value,
-        maxPlayers: parseInt(elements.eventMaxPlayers.value),
-        minQuorum: parseInt(elements.eventMinQuorum.value),
-        requiresApproval: elements.eventRequiresApproval.checked
-    };
-    
-    // Validación básica
-    if (!event.title || !event.date || !event.location) {
-        showNotification('Completa los campos requeridos', 'warning');
-        return;
-    }
-    
-    if (event.maxPlayers < event.minQuorum) {
-        showNotification('El quórum no puede ser mayor al máximo de jugadores', 'warning');
-        return;
-    }
-    
-    try {
-        const response = await fetch(API_URL + '/events/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(event)
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showNotification('✅ Evento creado exitosamente', 'success');
-            hideCreateEventModal();
-            loadEvents();
-        } else {
-            showNotification(`❌ ${data.error}`, 'error');
-        }
-    } catch (error) {
-        showNotification('✅ Evento creado (simulación)', 'success');
-        hideCreateEventModal();
-        loadEvents();
-    }
-}
-
-// ===== FUNCIONES AUXILIARES =====
-
-function setupEventListeners() {
-    // Cerrar modales al hacer clic fuera
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
+function resetFilters() {
+    // Resetear checkboxes y radios
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    document.querySelectorAll('input[type="radio"]').forEach(rb => {
+        if (rb.value === 'upcoming') rb.checked = true;
     });
     
-    // Agregar botón crear evento al hero
-    const heroActions = document.querySelector('.hero-actions');
-    if (heroActions && !document.getElementById('create-event-btn')) {
-        const createBtn = document.createElement('button');
-        createBtn.id = 'create-event-btn';
-        createBtn.className = 'btn btn-outline';
-        createBtn.innerHTML = '<i class="fas fa-plus"></i> Crear Evento';
-        createBtn.onclick = showCreateEventModal;
-        heroActions.appendChild(createBtn);
-    }
+    // Resetear estado
+    state.filters = {
+        city: '',
+        types: [],
+        status: 'upcoming',
+        social: []
+    };
+    
+    // Recargar eventos
+    loadEvents();
+}
+
+// ===== FUNCIONES DE UI =====
+function showLoading() {
+    document.getElementById('loading-state').style.display = 'flex';
+    document.getElementById('empty-state').style.display = 'none';
+}
+
+function hideLoading() {
+    document.getElementById('loading-state').style.display = 'none';
+}
+
+function updateEventsCount() {
+    const count = state.events.length;
+    const countElement = document.getElementById('events-count');
+    countElement.textContent = `(${count})`;
 }
 
 function updateUI() {
-    updateHostModeUI();
+    // Actualizar ciudad mostrada
+    const citySelect = document.getElementById('city-select');
+    const cityDisplay = document.getElementById('city-display');
+    
+    if (citySelect.value) {
+        const selectedOption = citySelect.options[citySelect.selectedIndex];
+        cityDisplay.textContent = `Eventos en ${selectedOption.text}`;
+    } else {
+        cityDisplay.textContent = 'Eventos cerca de ti';
+    }
 }
-
-function showNotification(message, type = 'info') {
-    // Eliminar notificación anterior si existe
-    const existingNotification = document.querySelector('.notification');
-    if (existingNotification) {
-        existingNotification.remove();
+function updateCityBackground(city) {
+    const body = document.body;
+    
+    // Remover todas las clases de ciudad
+    body.classList.remove('city-santiago', 'city-valparaiso', 'city-concepcion', 'city-temuco');
+    
+    // Si hay ciudad seleccionada, agregar clase
+    if (city) {
+        body.classList.add(`city-${city}`);
     }
     
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <i class="fas fa-${getNotificationIcon(type)}"></i>
-            <span>${message}</span>
+    // Si no hay ciudad o no tiene imagen, usar clase por defecto
+    if (!city || !['santiago', 'valparaiso', 'concepcion', 'temuco'].includes(city)) {
+        body.classList.add('city-default');
+    }
+}
+
+function toggleViewMode() {
+    const toggleBtn = document.getElementById('view-toggle');
+    const eventsGrid = document.getElementById('events-grid');
+    
+    if (state.viewMode === 'grid') {
+        state.viewMode = 'list';
+        eventsGrid.style.gridTemplateColumns = '1fr';
+        toggleBtn.innerHTML = '<i class="fas fa-list"></i><span>Lista</span>';
+    } else {
+        state.viewMode = 'grid';
+        eventsGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
+        toggleBtn.innerHTML = '<i class="fas fa-th"></i><span>Cards</span>';
+    }
+}
+
+// ===== FUNCIONES DE USUARIO =====
+function handleCreateEvent() {
+    if (!state.user) {
+        showLoginModal();
+        return;
+    }
+    // TODO: Implementar creación de eventos paso a paso
+    alert('Próximamente: Creación de eventos paso a paso');
+}
+
+function showLoginModal(context) {
+    const modal = document.getElementById('login-modal');
+    modal.style.display = 'flex';
+    
+    // Guardar contexto si es necesario (ej: para redirigir después de login)
+    if (context) {
+        modal.dataset.context = JSON.stringify(context);
+    }
+}
+
+function hideLoginModal() {
+    const modal = document.getElementById('login-modal');
+    modal.style.display = 'none';
+}
+
+function loginWithGoogle() {
+    // TODO: Implementar login con Google
+    state.user = {
+        id: 1,
+        name: 'Usuario Demo',
+        email: 'demo@petu.cl',
+        reputation: 100
+    };
+    hideLoginModal();
+    updateHeaderForUser();
+    showNotification('¡Bienvenido a petu!', 'success');
+}
+
+function loginWithEmail() {
+    const form = document.getElementById('login-form');
+    form.style.display = 'block';
+    
+    form.onsubmit = function(e) {
+        e.preventDefault();
+        // TODO: Implementar login con email
+        state.user = {
+            id: 1,
+            name: 'Usuario Demo',
+            email: 'demo@petu.cl',
+            reputation: 100
+        };
+        hideLoginModal();
+        updateHeaderForUser();
+        showNotification('¡Bienvenido a petu!', 'success');
+    };
+}
+
+function updateHeaderForUser() {
+    const loginBtn = document.getElementById('login-btn');
+    const createEventBtn = document.getElementById('create-event-btn');
+    
+    if (state.user) {
+        loginBtn.innerHTML = `
+            <i class="fas fa-user-circle"></i>
+            <span>${state.user.name}</span>
+        `;
+        loginBtn.onclick = () => {
+            // TODO: Mostrar menú de usuario
+            alert('Menú de usuario (próximamente)');
+        };
+        
+        createEventBtn.innerHTML = `
+            <i class="fas fa-plus"></i>
+            <span>Crear Minga</span>
+        `;
+    }
+}
+
+// ===== FUNCIONES DE EVENTOS (Detalles) =====
+function showEventDetail(eventId) {
+    const event = state.events.find(e => e.id === eventId);
+    if (!event) return;
+    
+    const modal = document.getElementById('event-detail-modal');
+    const title = document.getElementById('event-detail-title');
+    const body = modal.querySelector('.modal-body');
+    
+    title.textContent = event.title;
+    
+    body.innerHTML = `
+        <div class="event-detail">
+            <div class="event-detail-header">
+                <div class="event-detail-type">
+                    <span class="badge badge-primary">${getTypeLabel(event.type)}</span>
+                    <span class="badge ${event.status === 'confirmed' ? 'badge-success' : 'badge-warning'}">
+                        ${getStatusLabel(event.status)}
+                    </span>
+                </div>
+                <div class="event-detail-meta">
+                    <div class="meta-item">
+                        <i class="far fa-calendar"></i>
+                        <span>${formatDate(event.date)}</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>${event.location}</span>
+                    </div>
+                    <div class="meta-item">
+                        <i class="fas fa-users"></i>
+                        <span>${event.currentPlayers || 0}/${event.maxPlayers} personas</span>
+                    </div>
+                    ${event.minQuorum ? `
+                    <div class="meta-item">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Quórum mínimo: ${event.minQuorum}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div class="event-detail-description">
+                <h4>Descripción</h4>
+                <p>${event.description}</p>
+            </div>
+            
+            <div class="event-detail-actions">
+                ${state.user ? `
+                    <button class="btn btn-primary btn-block" onclick="joinEvent(${event.id})">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Apañar este evento
+                    </button>
+                ` : `
+                    <button class="btn btn-primary btn-block" onclick="showLoginModal()">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Ingresa para apañar
+                    </button>
+                `}
+            </div>
         </div>
     `;
     
-    document.body.appendChild(notification);
-    
-    // Mostrar animación
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
-    
-    // Ocultar después de 3 segundos
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-    }, 3000);
+    modal.style.display = 'flex';
 }
 
-function getNotificationIcon(type) {
-    switch(type) {
-        case 'success': return 'check-circle';
-        case 'error': return 'exclamation-circle';
-        case 'warning': return 'exclamation-triangle';
-        default: return 'info-circle';
-    }
+function hideEventDetailModal() {
+    document.getElementById('event-detail-modal').style.display = 'none';
 }
 
-function formatDate(dateString) {
-    if (!dateString) return 'Fecha no especificada';
+// ===== FUNCIONES AUXILIARES =====
+function setupEventListeners() {
+    // Selector de ciudad
+    document.getElementById('city-select').addEventListener('change', function() {
+        state.filters.city = this.value;
+        updateUI();
+        updateCityBackground(this.value); // <-- Agregar esta línea
+        loadEvents();
+    });
     
-    try {
-        // Intentar parsear como ISO string
-        const date = new Date(dateString);
-        if (!isNaN(date.getTime())) {
-            return date.toLocaleDateString('es-ES', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-    } catch (e) {
-        // Si falla, devolver el string original
-    }
+    // Filtros
+    document.querySelectorAll('input[name="event-type"]').forEach(cb => {
+        cb.addEventListener('change', applyFilters);
+    });
     
-    return dateString;
+    document.querySelectorAll('input[name="event-status"]').forEach(rb => {
+        rb.addEventListener('change', applyFilters);
+    });
+    
+    document.querySelectorAll('input[name="social-level"]').forEach(cb => {
+        cb.addEventListener('change', applyFilters);
+    });
+    
+    // Cerrar modales al hacer clic fuera
+    document.querySelectorAll('.modal-overlay').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.style.display = 'none';
+            }
+        });
+    });
 }
 
-function getCategoryLabel(category) {
-    const labels = {
-        'sports': 'Deportes',
-        'games': 'Juegos',
-        'food': 'Comida',
-        'other': 'Otro'
+function getTypeIcon(type) {
+    const icons = {
+        'sports': '⚽',
+        'outdoor': '🌳',
+        'cultural': '🎭',
+        'games': '🎲',
+        'minga': '👥'
     };
-    return labels[category] || category;
+    return icons[type] || '📅';
+}
+
+function getTypeLabel(type) {
+    const labels = {
+        'sports': 'Deporte',
+        'outdoor': 'Aire libre',
+        'cultural': 'Cultural',
+        'games': 'Juegos',
+        'minga': 'Minga'
+    };
+    return labels[type] || 'Evento';
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        'quorum-low': 'Buscando gente',
+        'quorum-medium': 'Casi listo',
+        'quorum-high': 'Minga activa',
+        'confirmed': 'Confirmado'
+    };
+    return labels[status] || 'Pendiente';
+}
+
+function getQuorumStatus(percentage) {
+    if (percentage < 50) return 'low';
+    if (percentage < 80) return 'medium';
+    if (percentage < 100) return 'high';
+    return 'full';
 }
 
 function calculateQuorumPercentage(current, max, min) {
@@ -442,21 +511,45 @@ function calculateQuorumPercentage(current, max, min) {
     return Math.round(((current - min) / (max - min)) * 100);
 }
 
-// ===== FUNCIONES PÚBLICAS =====
-window.loadEvents = loadEvents;
-window.testAPI = testAPI;
-window.showLoginModal = () => elements.loginModal.style.display = 'flex';
-window.hideLoginModal = () => elements.loginModal.style.display = 'none';
-window.login = login;
-window.toggleHostMode = toggleHostMode;
-window.showCreateEventModal = showCreateEventModal;
-window.hideCreateEventModal = hideCreateEventModal;
-window.createEvent = createEvent;
+function formatDate(dateString) {
+    if (!dateString) return 'Fecha no especificada';
+    return dateString;
+}
 
-// Unirse a evento (simulado)
+function showNotification(message, type = 'info') {
+    // Implementar notificaciones bonitas
+    alert(message);
+}
+function getTypeImage(type) {
+    const images = {
+        'sports': '⚽',
+        'outdoor': '🌳', 
+        'cultural': '🎭',
+        'games': '🎲',
+        'minga': '👥'
+    };
+    return images[type] || '📅';
+}
+
+// ===== FUNCIONES PÚBLICAS (para onclick) =====
+window.applyFilters = applyFilters;
+window.resetFilters = resetFilters;
+window.toggleViewMode = toggleViewMode;
+window.showLoginModal = showLoginModal;
+window.hideLoginModal = hideLoginModal;
+window.loginWithGoogle = loginWithGoogle;
+window.loginWithEmail = loginWithEmail;
+window.handleCreateEvent = handleCreateEvent;
+window.showEventDetail = showEventDetail;
+window.hideEventDetailModal = hideEventDetailModal;
 window.joinEvent = async (eventId) => {
+    if (!state.user) {
+        showLoginModal();
+        return;
+    }
+    
     try {
-        const response = await fetch(API_URL + '/events/' + eventId + '/join', {
+        const response = await fetch(API_URL + `/events/${eventId}/join`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
@@ -464,16 +557,22 @@ window.joinEvent = async (eventId) => {
         const data = await response.json();
         
         if (data.success) {
-            if (data.requiresApproval) {
-                showNotification('✅ Solicitud enviada. Espera aprobación.', 'info');
-            } else {
-                showNotification('✅ ¡Te has unido al evento!', 'success');
-                loadEvents(); // Recargar para actualizar contadores
-            }
+            showNotification('¡Te has unido al evento!', 'success');
+            hideEventDetailModal();
+            loadEvents(); // Recargar para actualizar contadores
         } else {
-            showNotification(`❌ ${data.error}`, 'error');
+            showNotification(data.error || 'No se pudo unir al evento', 'error');
         }
     } catch (error) {
-        showNotification('✅ Simulación: Te has unido al evento', 'success');
+        showNotification('¡Te has unido al evento! (simulación)', 'success');
+        hideEventDetailModal();
+        loadEvents();
     }
+};
+
+window.goToExplore = () => {
+    // Resetear a vista de exploración
+    resetFilters();
+    document.getElementById('city-select').value = '';
+    updateUI();
 };

@@ -3,237 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>petu - Eventos con Compromiso</title>
+    <title>petu - Encuentra eventos cerca de ti</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Solo CSS CRÍTICO que necesita cargar inmediatamente */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            padding: 15px 20px;
-            z-index: 3000;
-            transform: translateX(120%);
-            transition: transform 0.3s ease;
-            max-width: 400px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .notification.show {
-            transform: translateX(0);
-        }
-        
-        .notification-success {
-            border-left-color: #48bb78;
-        }
-        
-        .notification-error {
-            border-left-color: #f56565;
-        }
-        
-        .notification-warning {
-            border-left-color: #ed8936;
-        }
-        
-        .notification-info {
-            border-left-color: #4299e1;
-        }
-        
-        .notification-content {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .notification-content i {
-            font-size: 1.2rem;
-        }
-        
-        .loading-card {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 40px;
-        }
-        
-        .loading-card i {
-            font-size: 2rem;
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-    </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <div class="logo-section">
-                    <div class="logo">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>petu</span>
-                    </div>
-                    <div class="tagline">Eventos con compromiso</div>
+    <header class="main-header">
+        <div class="header-container">
+            <!-- Logo + Volver a explorar -->
+            <div class="logo" onclick="goToExplore()">
+                <i class="fas fa-calendar-check"></i>
+                <span class="logo-text">petu</span>
+            </div>
+            <!-- Selector de Ciudad -->
+            <div class="city-selector-container">
+                <div class="city-selector">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <select id="city-select" class="city-select">
+                        <option value="">¿Dónde?</option>
+                        <option value="santiago">Santiago</option>
+                        <option value="valparaiso">Valparaíso</option>
+                        <option value="concepcion" selected>Concepción</option>
+                        <option value="temuco">Temuco</option>
+                    </select>
                 </div>
-                
-                <div class="header-controls">
-                    <div id="mode-indicator" class="mode-indicator">
-                        <span class="mode-badge">
-                            <i class="fas fa-crown"></i> Modo Host
-                        </span>
-                    </div>
-                    <button class="btn btn-mode" onclick="toggleHostMode()" id="host-mode-btn">
-                        <i class="fas fa-user"></i> Modo Usuario
-                    </button>
-                </div>
+            </div>
+         
+            <!-- CTAs Mínimos -->
+            <div class="header-actions">
+                <button class="btn btn-ghost" onclick="showLoginModal()" id="login-btn">
+                    <i class="fas fa-user"></i>
+                    <span>Ingresar</span>
+                </button>
+                <button class="btn btn-primary" onclick="handleCreateEvent()" id="create-event-btn">
+                    <i class="fas fa-plus"></i>
+                    <span>Crear evento</span>
+                </button>
             </div>
         </div>
     </header>
 
-    <main class="container">
-        <section class="api-status">
-            <h3>Estado del Backend:</h3>
-            <div id="backend-status">
-                <p><i class="fas fa-sync fa-spin"></i> Probando conexión con el servidor...</p>
-            </div>
-        </section>
+    <!-- Layout Principal: 2 Columnas -->
+    <main class="main-layout">
+        <!-- Columna Izquierda: Filtros (Sticky) -->
+        <aside class="filters-column" id="filters-column">
+            <div class="filters-container">
+                <h3 class="filters-title">
+                    <i class="fas fa-filter"></i>
+                    <span>Explorar</span>
+                </h3>
 
-        <section class="hero">
-            <h1>Participa en eventos <span class="hero-highlight">sin sorpresas</span></h1>
-            <p>Únete a eventos que realmente se realizarán. Sistema de confirmaciones, reemplazos automáticos y penalizaciones por faltar sin aviso.</p>
-            <div class="hero-actions">
-                <button class="btn" onclick="loadEvents()">
-                    <i class="fas fa-sync"></i> Cargar Eventos
-                </button>
-                <button class="btn btn-outline" onclick="testAPI()">
-                    <i class="fas fa-vial"></i> Probar API
-                </button>
-                <button class="btn" onclick="showLoginModal()">
-                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-                </button>
-                <!-- El botón "Crear Evento" se agregará dinámicamente -->
-            </div>
-        </section>
-
-        <section class="events-section">
-            <h2>Próximos Eventos</h2>
-            <div class="events-grid" id="events-grid">
-                <div class="event-card loading-card">
-                    <div class="event-body text-center">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Cargando eventos...</p>
+                <!-- Filtros en Orden UX -->
+                <div class="filter-section">
+                    <h4 class="filter-section-title">
+                        <i class="fas fa-tag"></i>
+                        Tipo de evento
+                    </h4>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" name="event-type" value="sports">
+                            <span class="filter-icon">⚽</span>
+                            <span>Deporte</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="event-type" value="outdoor">
+                            <span class="filter-icon">🌳</span>
+                            <span>Aire libre</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="event-type" value="cultural">
+                            <span class="filter-icon">🎭</span>
+                            <span>Cultural</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="event-type" value="games">
+                            <span class="filter-icon">🎲</span>
+                            <span>Juegos</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="event-type" value="minga">
+                            <span class="filter-icon">👥</span>
+                            <span>Minga</span>
+                        </label>
                     </div>
                 </div>
+
+                <div class="filter-section">
+                    <h4 class="filter-section-title">
+                        <i class="fas fa-clock"></i>
+                        Estado
+                    </h4>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="radio" name="event-status" value="upcoming" checked>
+                            <span>Próximos</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="event-status" value="today">
+                            <span>Hoy</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="radio" name="event-status" value="quorum-near">
+                            <span>Minga activa</span>
+                            <span class="badge badge-warning">🔥</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <h4 class="filter-section-title">
+                        <i class="fas fa-users"></i>
+                        Nivel social
+                    </h4>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" name="social-level" value="open">
+                            <span>Abierto</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="social-level" value="group">
+                            <span>Grupal</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" name="social-level" value="family">
+                            <span>Familiar</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Acciones de filtros -->
+                <div class="filter-actions">
+                    <button class="btn btn-block" onclick="applyFilters()">
+                        <i class="fas fa-check"></i>
+                        Aplicar
+                    </button>
+                    <button class="btn btn-text" onclick="resetFilters()">
+                        <i class="fas fa-redo"></i>
+                        Limpiar
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Columna Derecha: Cards de Eventos -->
+        <section class="content-column">
+            <!-- Encabezado de contenido -->
+            <div class="content-header">
+                <h1 id="events-title">
+                    <span id="city-display">Eventos cerca de ti</span>
+                    <span class="events-count" id="events-count">...</span>
+                </h1>
+                <div class="content-actions">
+                    <button class="btn btn-outline" onclick="toggleViewMode()" id="view-toggle">
+                        <i class="fas fa-th"></i>
+                        <span>Cards</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Estado: Cargando o sin eventos -->
+            <div class="content-state" id="content-state">
+                <div class="loading-state" id="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>Buscando eventos...</p>
+                </div>
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <i class="fas fa-calendar-times"></i>
+                    <h3>No hay eventos aquí</h3>
+                    <p>Cambia los filtros o crea el primer evento</p>
+                </div>
+            </div>
+
+            <!-- Grid de Eventos -->
+            <div class="events-grid" id="events-grid">
+                <!-- Las cards se insertan aquí dinámicamente -->
             </div>
         </section>
     </main>
 
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <p>© 2024 petu - Eventos con compromiso</p>
-                <p class="footer-tech">
-                    <i class="fas fa-code"></i> Desarrollado con Node.js + Express + SQLite
-                </p>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Modal de Login -->
-    <div id="login-modal" class="modal-overlay">
-        <div class="modal">
+    <!-- Modal de Login (Mínimo) -->
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal modal-sm">
             <div class="modal-header">
-                <h3><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</h3>
+                <h3>Ingresa a petu</h3>
                 <button class="modal-close" onclick="hideLoginModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" class="form-control" placeholder="tu@email.com">
+                <div class="login-options">
+                    <button class="btn btn-block btn-social" onclick="loginWithGoogle()">
+                        <i class="fab fa-google"></i>
+                        Continuar con Google
+                    </button>
+                    <button class="btn btn-block btn-social" onclick="loginWithEmail()">
+                        <i class="fas fa-envelope"></i>
+                        Continuar con Email
+                    </button>
                 </div>
-                <div class="form-group">
-                    <label for="login-password">Contraseña</label>
-                    <input type="password" id="login-password" class="form-control" placeholder="••••••••">
+                <div class="login-divider">
+                    <span>o</span>
                 </div>
-                <button class="btn btn-block" onclick="login()">
-                    <i class="fas fa-sign-in-alt"></i> Ingresar
-                </button>
-                <button class="btn btn-outline btn-block mt-2" onclick="hideLoginModal()">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
+                <form id="login-form" style="display: none;">
+                    <div class="form-group">
+                        <input type="email" placeholder="Email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" placeholder="Contraseña" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-block">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Ingresar
+                    </button>
+                </form>
+                <p class="modal-footer-text">
+                    Al ingresar aceptas nuestros
+                    <a href="#">Términos</a> y <a href="#">Privacidad</a>
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- Modal para Crear Evento -->
-    <div id="create-event-modal" class="modal-overlay">
-        <div class="modal">
+    <!-- Modal de Detalles de Evento -->
+    <div class="modal-overlay" id="event-detail-modal">
+        <div class="modal modal-lg">
             <div class="modal-header">
-                <h3><i class="fas fa-calendar-plus"></i> Crear Nuevo Evento</h3>
-                <button class="modal-close" onclick="hideCreateEventModal()">&times;</button>
+                <h3 id="event-detail-title"></h3>
+                <button class="modal-close" onclick="hideEventDetailModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label for="event-title">Título del Evento *</label>
-                    <input type="text" id="event-title" class="form-control" placeholder="Ej: Fútbol 5 - Torneo Amistoso">
-                </div>
-                
-                <div class="form-group">
-                    <label for="event-description">Descripción</label>
-                    <textarea id="event-description" class="form-control" placeholder="Describe tu evento..."></textarea>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="event-category">Categoría</label>
-                        <select id="event-category" class="form-control">
-                            <option value="sports">Deportes</option>
-                            <option value="games">Juegos</option>
-                            <option value="food">Comida</option>
-                            <option value="other">Otro</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="event-date">Fecha y Hora *</label>
-                        <input type="datetime-local" id="event-date" class="form-control">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="event-location">Ubicación *</label>
-                    <input type="text" id="event-location" class="form-control" placeholder="Ej: Cancha Central, Av. Principal 123">
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="event-max-players">Máximo de Jugadores</label>
-                        <input type="number" id="event-max-players" class="form-control" min="2" value="10">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="event-min-quorum">Quórum Mínimo</label>
-                        <input type="number" id="event-min-quorum" class="form-control" min="2" value="4">
-                    </div>
-                </div>
-                
-                <div class="checkbox-group">
-                    <input type="checkbox" id="event-requires-approval">
-                    <label for="event-requires-approval">¿Requiere aprobación del organizador?</label>
-                </div>
-                
-                <button class="btn btn-block" onclick="createEvent()">
-                    <i class="fas fa-check"></i> Crear Evento
-                </button>
-                <button class="btn btn-outline btn-block mt-2" onclick="hideCreateEventModal()">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
+                <!-- Contenido dinámico -->
             </div>
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="js/app.js"></script>
 </body>
 </html>
