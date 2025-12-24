@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prueba Rápida petu</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Prueba de Conexión Frontend-Backend</h1>
+    
+    <div>
+        <h3>1. Estado del Backend</h3>
+        <button onclick="testBackend()">Probar Backend</button>
+        <div id="backend-result"></div>
+    </div>
+    
+    <div>
+        <h3>2. Cargar Eventos</h3>
+        <button onclick="loadEvents()">Cargar Eventos</button>
+        <div id="events-result"></div>
+    </div>
+    
+    <div>
+        <h3>3. Registrar Usuario</h3>
+        <input type="text" id="name" placeholder="Nombre" value="Juan Pérez">
+        <input type="email" id="email" placeholder="Email" value="juan@ejemplo.com">
+        <input type="password" id="password" placeholder="Contraseña" value="123456">
+        <button onclick="register()">Registrar</button>
+        <div id="register-result"></div>
+    </div>
+    
+    <div>
+        <h3>4. Iniciar Sesión</h3>
+        <button onclick="login()">Login Demo</button>
+        <div id="login-result"></div>
+    </div>
+    
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        
+        async function testBackend() {
+            try {
+                const response = await fetch('http://localhost:3000/');
+                const data = await response.json();
+                document.getElementById('backend-result').innerHTML = 
+                    `<p class="success">✅ ${data.message}</p>
+                     <pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                document.getElementById('backend-result').innerHTML = 
+                    `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function loadEvents() {
+            try {
+                const response = await fetch(API_URL + '/events');
+                const events = await response.json();
+                
+                let html = `<p class="success">✅ ${events.length} eventos cargados</p>`;
+                events.forEach(event => {
+                    html += `
+                        <div style="border:1px solid #ddd; padding:10px; margin:10px 0;">
+                            <strong>${event.title}</strong><br>
+                            ${event.description}<br>
+                            <small>📍 ${event.location} | 👥 ${event.currentPlayers}/${event.maxPlayers}</small>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('events-result').innerHTML = html;
+            } catch (error) {
+                document.getElementById('events-result').innerHTML = 
+                    `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function register() {
+            const user = {
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                full_name: document.getElementById('name').value
+            };
+            
+            try {
+                const response = await fetch(API_URL + '/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(user)
+                });
+                
+                const data = await response.json();
+                document.getElementById('register-result').innerHTML = 
+                    `<p class="success">✅ ${data.message}</p>
+                     <pre>Usuario ID: ${data.user.id}</pre>`;
+            } catch (error) {
+                document.getElementById('register-result').innerHTML = 
+                    `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function login() {
+            const credentials = {
+                email: 'demo@ejemplo.com',
+                password: 'demo123'
+            };
+            
+            try {
+                const response = await fetch(API_URL + '/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(credentials)
+                });
+                
+                const data = await response.json();
+                document.getElementById('login-result').innerHTML = 
+                    `<p class="success">✅ ${data.message}</p>
+                     <pre>Bienvenido: ${data.user.full_name}</pre>`;
+            } catch (error) {
+                document.getElementById('login-result').innerHTML = 
+                    `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Probar automáticamente
+        testBackend();
+        setTimeout(loadEvents, 1000);
+    </script>
+</body>
+</html>
