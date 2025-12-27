@@ -14,10 +14,7 @@
             <div class="logo-section">
                 <div class="logo" onclick="goToExplore()">
                     <img src="images/logo_petu.jpg" alt="petu" class="logo-img">
-                    <!-- O si prefieres mantener el icono + texto -->
-                    <!-- <i class="fas fa-calendar-check"></i> -->
-                    <!-- <span class="logo-text">petu</span> -->
-                </div>
+                            </div>
             </div>
             <!-- Selector de Ciudad -->
             <div class="city-selector-container">
@@ -146,67 +143,99 @@
                         <i class="fas fa-redo"></i>
                         Limpiar
                     </button>
+                    <button class="btn btn-ghost" onclick="toggleDarkMode()">
+                    🌙
+                    </button>
+
                 </div>
             </div>
         </aside>
 
         <!-- Columna Derecha: Cards de Eventos -->
-        <section class="content-column">
-            <!-- Encabezado de contenido -->
-            <div class="content-header">
-                <h1 id="events-title">
-                    <span id="city-display">Eventos cerca de ti</span>
-                    <span class="events-count" id="events-count">...</span>
-                </h1>
-                <div class="content-actions">
-                    <button class="btn btn-outline" onclick="toggleViewMode()" id="view-toggle">
-                        <i class="fas fa-th"></i>
-                        <span>Cards</span>
-                    </button>
-                </div>
-            </div>
+        <div class="content-column">
 
-            <!-- Estado: Cargando o sin eventos -->
-            <div class="content-state" id="content-state">
-                <div class="loading-state" id="loading-state">
-                    <div class="loading-spinner"></div>
-                    <p>Buscando eventos...</p>
-                </div>
-                <div class="empty-state" id="empty-state" style="display: none;">
-                    <i class="fas fa-calendar-times"></i>
-                    <h3>No hay eventos aquí</h3>
-                    <p>Cambia los filtros o crea el primer evento</p>
-                </div>
-            </div>
+            <!-- SECCIÓN 1 -->
+            <section class="home-section">
+                <h2 class="home-section-title">Panoramas cerca de ti</h2>
 
-            <!-- Grid de Eventos -->
-            <div class="events-grid" id="events-grid">
-                <!-- Las cards se insertan aquí dinámicamente -->
-            </div>
-        </section>
+                <div class="horizontal-scroll">
+                    <!-- Cambia esta línea: -->
+                    <div class="events-row" id="events-grid">
+                        <!-- Las cards se insertarán aquí dinámicamente -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 2 -->
+            <section class="home-section">
+                <h2 class="home-section-title">Algunos grupos que te puedan interesar</h2>
+
+                <div class="horizontal-scroll">
+                    <div class="groups-row" id="groups-grid">
+                        <!-- Los grupos se insertarán aquí dinámicamente -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN 3 -->
+            <section class="home-section">
+                <h2 class="home-section-title">¿Qué te tinca?</h2>
+                <!-- Puedes agregar sugerencias aquí -->
+                <div id="suggestions-content">
+                    <!-- Contenido dinámico -->
+                </div>
+            </section>
+
+        </div>
+
     </main>
 
     <!-- Modal de Login (Mínimo) -->
     <div class="modal-overlay" id="login-modal">
         <div class="modal modal-sm">
             <div class="modal-header">
-                <h3>Ingresa a petu</h3>
+                <h3>Ingresa a Petu!</h3>
                 <button class="modal-close" onclick="hideLoginModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="login-options">
-                    <button class="btn btn-block btn-social" onclick="loginWithGoogle()">
-                        <i class="fab fa-google"></i>
-                        Continuar con Google
+                <!-- LOGIN TRADICIONAL -->
+                <form id="login-form">
+                    <div class="form-group">
+                        <input 
+                            type="text"
+                            placeholder="Usuario o Email"
+                            class="form-control"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <input 
+                            type="password"
+                            placeholder="Contraseña"
+                            class="form-control"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-block">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Ingresar
                     </button>
-                    <button class="btn btn-block btn-social" onclick="loginWithEmail()">
-                        <i class="fas fa-envelope"></i>
-                        Continuar con Email
-                    </button>
-                </div>
+                </form>
                 <div class="login-divider">
                     <span>o</span>
                 </div>
+                <div class="login-options">
+                    <button class="btn btn-block btn-social btn-google" onclick="loginWithGoogle()">
+                        <i class="fab fa-google"></i>
+                        Continuar con Google
+                    </button>
+                    <button class="btn btn-block btn-social btn-facebook" onclick="loginWithFacebook()">
+                        <i class="fab fa-facebook-f"></i>
+                        Continuar con Facebook
+                    </button>
+                </div>
+                
                 <form id="login-form" style="display: none;">
                     <div class="form-group">
                         <input type="email" placeholder="Email" class="form-control" required>

@@ -99,21 +99,118 @@ function getExampleEvents() {
 
 function renderEvents() {
     const eventsGrid = document.getElementById('events-grid');
+    if (!eventsGrid) return; // Verifica que el elemento existe
+    
     eventsGrid.innerHTML = '';
     
     if (state.events.length === 0) {
-        document.getElementById('empty-state').style.display = 'flex';
+        showNoEventsMessage();
         return;
     }
-    
-    document.getElementById('empty-state').style.display = 'none';
     
     state.events.forEach(event => {
         const eventCard = createEventCard(event);
         eventsGrid.appendChild(eventCard);
     });
+    
+    // También renderiza grupos y sugerencias si quieres
+    renderGroups();
+    renderSuggestions();
+}
+function renderGroups() {
+    const groupsGrid = document.getElementById('groups-grid');
+    if (!groupsGrid) return;
+    
+    // Datos de ejemplo para grupos
+    const groups = [
+        { id: 1, name: "Futboleros", members: 42, icon: "⚽" },
+        { id: 2, name: "Trekking Chile", members: 28, icon: "🥾" },
+        { id: 3, name: "Juegos de Mesa", members: 35, icon: "🎲" },
+        { id: 4, name: "Cultural Concepción", members: 19, icon: "🎭" }
+    ];
+    
+    groupsGrid.innerHTML = '';
+    
+    groups.forEach(group => {
+        const groupCard = document.createElement('div');
+        groupCard.className = 'group-card';
+        groupCard.onclick = () => showGroupDetail(group.id);
+        
+        groupCard.innerHTML = `
+            <div class="group-icon">${group.icon}</div>
+            <div class="group-name">${group.name}</div>
+            <div class="group-members">
+                <i class="fas fa-users"></i>
+                <span>${group.members} miembros</span>
+            </div>
+        `;
+        
+        groupsGrid.appendChild(groupCard);
+    });
+}
+function renderSuggestions() {
+    const suggestionsContent = document.getElementById('suggestions-content');
+    if (!suggestionsContent) return;
+    
+    const suggestions = [
+        { id: 1, text: "Partido de fútbol", icon: "⚽" },
+        { id: 2, text: "Picnic en el parque", icon: "🧺" },
+        { id: 3, text: "Juegos de mesa", icon: "🎲" },
+        { id: 4, text: "Paseo en bicicleta", icon: "🚴" },
+        { id: 5, text: "Minga comunitaria", icon: "👥" },
+        { id: 6, text: "Clase de algo", icon: "🎓" }
+    ];
+    
+    suggestionsContent.innerHTML = `
+        <div class="suggestions-grid">
+            ${suggestions.map(suggestion => `
+                <div class="suggestion-card" onclick="createSuggestion('${suggestion.text}')">
+                    <div class="suggestion-icon">${suggestion.icon}</div>
+                    <div class="suggestion-text">${suggestion.text}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+function showNoEventsMessage() {
+    // Busca o crea un elemento para mostrar mensaje cuando no hay eventos
+    const eventsGrid = document.getElementById('events-grid');
+    if (eventsGrid) {
+        eventsGrid.innerHTML = `
+            <div class="empty-state" style="min-width: 280px;">
+                <i class="fas fa-calendar-times"></i>
+                <h3>No hay eventos aquí</h3>
+                <p>Cambia los filtros o crea el primer evento</p>
+                <button class="btn btn-primary" onclick="handleCreateEvent()">
+                    Crear primer evento
+                </button>
+            </div>
+        `;
+    }
 }
 
+function createSuggestion(text) {
+    if (!state.user) {
+        showLoginModal();
+        return;
+    }
+    
+    // Redirigir a creación de evento con sugerencia pre-seleccionada
+    // Puedes implementar esto según tu sistema
+    console.log('Crear evento con sugerencia:', text);
+    // Por ejemplo:
+    // openCreateEventWizard({ suggestion: text });
+}
+
+function showGroupDetail(groupId) {
+    if (!state.user) {
+        showLoginModal();
+        return;
+    }
+    
+    // Implementa la lógica para mostrar detalles del grupo
+    console.log('Mostrar grupo:', groupId);
+}
 function createEventCard(event) {
     const card = document.createElement('div');
     card.className = 'event-card';
@@ -127,6 +224,7 @@ function createEventCard(event) {
     
     const quorumStatus = getQuorumStatus(quorumPercentage);
     
+    // Para el layout horizontal, puedes usar un diseño más compacto
     card.innerHTML = `
         <div class="event-card-image">
             <div class="event-card-image-placeholder">
@@ -142,47 +240,25 @@ function createEventCard(event) {
                 <span class="event-type-icon">${getTypeIcon(event.type)}</span>
                 <span>${getTypeLabel(event.type)}</span>
             </div>
-            <div class="event-status ${event.status}">
-                ${getStatusLabel(event.status)}
-            </div>
         </div>
         
         <div class="event-card-body">
             <h3 class="event-title">${event.title}</h3>
-            <p class="event-description ${!state.user ? 'blurred' : ''}">
-                ${event.description}
-            </p>
-
+            
             <div class="event-meta">
-                <div class="event-meta-item ${!state.user ? 'blurred' : ''}">
+                <div class="event-meta-item">
                     <i class="far fa-calendar"></i>
                     <span>${formatDate(event.date)}</span>
                 </div>
-                <div class="event-meta-item ${!state.user ? 'blurred' : ''}">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span>${event.location}</span>
-                </div>
                 <div class="event-meta-item">
                     <i class="fas fa-users"></i>
-                    <span>${event.currentPlayers || 0}/${event.maxPlayers} personas</span>
+                    <span>${event.currentPlayers || 0}/${event.maxPlayers}</span>
                 </div>
             </div>
             
-            
-        </div>
-        
-        <div class="event-card-footer">
-            ${state.user ? `
-                <button class="btn btn-primary btn-block" onclick="joinEvent(${event.id}, event)">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span>Apañar</span>
-                </button>
-            ` : `
-                <button class="btn btn-primary btn-block" onclick="showLoginModal(event)">
-                    <i class="fas fa-eye"></i>
-                    <span>Ver detalles</span>
-                </button>
-            `}
+            <div class="event-status ${event.status}">
+                ${getStatusLabel(event.status)}
+            </div>
         </div>
     `;
     
@@ -287,7 +363,7 @@ function toggleViewMode() {
     } else {
         state.viewMode = 'grid';
         eventsGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(320px, 1fr))';
-        toggleBtn.innerHTML = '<i class="fas fa-th"></i><span>Cards</span>';
+        toggleBtn.innerHTML = '<i class="fas fa-th"></i><span>Cards </span>';
     }
 }
 
@@ -591,3 +667,7 @@ window.goToExplore = () => {
     document.getElementById('city-select').value = '';
     updateUI();
 };
+
+function toggleDarkMode() {
+    document.body.classList.toggle('dark');
+}
