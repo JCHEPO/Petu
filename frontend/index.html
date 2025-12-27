@@ -11,9 +11,13 @@
     <header class="main-header">
         <div class="header-container">
             <!-- Logo + Volver a explorar -->
-            <div class="logo" onclick="goToExplore()">
-                <i class="fas fa-calendar-check"></i>
-                <span class="logo-text">petu</span>
+            <div class="logo-section">
+                <div class="logo" onclick="goToExplore()">
+                    <img src="images/logo_petu.jpg" alt="petu" class="logo-img">
+                    <!-- O si prefieres mantener el icono + texto -->
+                    <!-- <i class="fas fa-calendar-check"></i> -->
+                    <!-- <span class="logo-text">petu</span> -->
+                </div>
             </div>
             <!-- Selector de Ciudad -->
             <div class="city-selector-container">
@@ -26,21 +30,22 @@
                         <option value="concepcion" selected>Concepción</option>
                         <option value="temuco">Temuco</option>
                     </select>
-                </div>
-            </div>
-         
-            <!-- CTAs Mínimos -->
-            <div class="header-actions">
-                <button class="btn btn-ghost" onclick="showLoginModal()" id="login-btn">
-                    <i class="fas fa-user"></i>
-                    <span>Ingresar</span>
-                </button>
-                <button class="btn btn-primary" onclick="handleCreateEvent()" id="create-event-btn">
-                    <i class="fas fa-plus"></i>
-                    <span>Crear evento</span>
-                </button>
             </div>
         </div>
+         
+           <div class="user-actions">
+            <button class="btn btn-ghost" onclick="showLoginModal()" id="login-btn">
+                <i class="fas fa-user"></i>
+                <span>Ingresar</span>
+            </button>
+            <button class="btn btn-primary" onclick="handleCreateEvent()" id="create-event-btn">
+                <i class="fas fa-plus"></i>
+                <span>Crear evento</span>
+            </button>
+        </div>
+    </div>
+</header>
+    </div>
     </header>
 
     <!-- Layout Principal: 2 Columnas -->

@@ -22,7 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initApp() {
-    updateCityBackground('concepcion'); // <-- Mostrar fondo de Concepción
+    // Mostrar fondo de Concepción por defecto
+    document.body.classList.add('city-concepcion');
     setupEventListeners();
     loadEvents();
     updateUI();
@@ -257,15 +258,20 @@ function updateCityBackground(city) {
     const body = document.body;
     
     // Remover todas las clases de ciudad
-    body.classList.remove('city-santiago', 'city-valparaiso', 'city-concepcion', 'city-temuco');
+    body.classList.remove('city-santiago', 'city-valparaiso', 'city-concepcion', 'city-concepcion2', 'city-temuco', 'city-default');
     
-    // Si hay ciudad seleccionada, agregar clase
-    if (city) {
+    // Solo para Concepción: alternar entre dos fondos
+    if (city === 'concepcion') {
+        // Si ya tiene city-concepcion, cambia a city-concepcion2, y viceversa
+        if (body.classList.contains('city-concepcion')) {
+            body.classList.add('city-concepcion2');
+        } else {
+            body.classList.add('city-concepcion');
+        }
+    } else if (city) {
+        // Para otras ciudades
         body.classList.add(`city-${city}`);
-    }
-    
-    // Si no hay ciudad o no tiene imagen, usar clase por defecto
-    if (!city || !['santiago', 'valparaiso', 'concepcion', 'temuco'].includes(city)) {
+    } else {
         body.classList.add('city-default');
     }
 }
@@ -437,9 +443,18 @@ function hideEventDetailModal() {
 function setupEventListeners() {
     // Selector de ciudad
     document.getElementById('city-select').addEventListener('change', function() {
-        state.filters.city = this.value;
+        const selectedCity = this.value;
+        state.filters.city = selectedCity;
         updateUI();
-        updateCityBackground(this.value); // <-- Agregar esta línea
+        
+        // Actualizar fondo de la ciudad
+        if (selectedCity === 'concepcion') {
+            // Forzar el cambio de fondo para Concepción
+            updateCityBackground(selectedCity);
+        } else {
+            updateCityBackground(selectedCity);
+        }
+        
         loadEvents();
     });
     
